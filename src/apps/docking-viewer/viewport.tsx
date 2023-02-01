@@ -4,6 +4,7 @@
  * @author Alexander Rose <alexander.rose@weirdbyte.de>
  */
 
+import { InteractionsParams, InteractionsProvider } from '../../mol-model-props/computed/interactions';
 import { InteractionsRepresentationProvider } from '../../mol-model-props/computed/representations/interactions';
 import { InteractionTypeColorThemeProvider } from '../../mol-model-props/computed/themes/interaction-type';
 import { presetStaticComponent, StructureRepresentationPresetProvider } from '../../mol-plugin-state/builder/structure/representation-preset';
@@ -20,8 +21,11 @@ import { PluginConfig } from '../../mol-plugin/config';
 import { PluginContext } from '../../mol-plugin/context';
 import { MolScriptBuilder as MS } from '../../mol-script/language/builder';
 import { StateObjectRef } from '../../mol-state';
+import { SyncRuntimeContext } from '../../mol-task/execution/synchronous';
+import { AssetManager } from '../../mol-util/assets';
 import { Color } from '../../mol-util/color';
 import { Material } from '../../mol-util/material';
+import { ParamDefinition } from '../../mol-util/param-definition';
 
 function shinyStyle(plugin: PluginContext) {
     return PluginCommands.Canvas3D.SetSettings(plugin, { settings: {
@@ -65,7 +69,7 @@ function occlusionStyle(plugin: PluginContext) {
 const ligandPlusSurroundings = StructureSelectionQuery('Surrounding Residues (5 \u212B) of Ligand plus Ligand itself', MS.struct.modifier.union([
     MS.struct.modifier.includeSurroundings({
         0: StructureSelectionQueries.ligand.expression,
-        radius: 5,
+        radius: 100,
         'as-whole-residues': true
     })
 ]));
@@ -201,6 +205,26 @@ const InteractionsPreset = StructureRepresentationPresetProvider({
         const structureCell = StateObjectRef.resolveAndCheck(plugin.state.data, ref);
         const structure = structureCell?.obj?.data;
         if (!structureCell || !structure) return {};
+
+        const interactionsParams = ParamDefinition.merge(
+            InteractionsParams,
+            { ...ParamDefinition.getDefaultValues(InteractionsParams) },
+            {
+                providers: {
+                    'ionic': { name: 'off', params: { distanceMax: 5 } },
+                    'pi-stacking': { name: 'off', params: { distanceMax: 5.5, angleDevMax: 30, offsetMax: 2.0 } },
+                    'cation-pi': { name: 'off', params: { distanceMax: 6 } },
+                    'halogen-bonds': { name: 'off', params: { distanceMax: 4.0, angleMax: 30 } },
+                    'hydrogen-bonds': { name: 'off', params: { distanceMax: 4.1 } },
+                    'hydrophobic': { name: 'on', params: { distanceMax: 4 } },
+                    'metal-coordination': { name: 'off', params: { distanceMax: 3.0 } },
+                },
+            },
+        );
+        const ctx = { runtime: SyncRuntimeContext, assetManager: new AssetManager() };
+        await InteractionsProvider.attach(ctx, structure, interactionsParams);
+        const interactions = InteractionsProvider.get(structure).value!;
+        console.log(interactions);
 
         const components = {
             ligand: await presetStaticComponent(plugin, structureCell, 'ligand'),

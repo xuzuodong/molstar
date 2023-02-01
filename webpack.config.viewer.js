@@ -1,5 +1,6 @@
 const common = require('./webpack.config.common.js');
 const createApp = common.createApp;
 module.exports = [
-    createApp('viewer', 'molstar')
+    // createApp('viewer', 'molstar'),
+    createApp('docking-viewer', 'molstar'),
 ];

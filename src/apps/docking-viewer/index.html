@@ -23,12 +23,12 @@
                 var r = new RegExp(name + '=' + '(' + regex + ')[&]?', 'i');
                 return decodeURIComponent(((window.location.search || '').match(r) || [])[1] || '');
             }
-            var pdbqt = getParam('pdbqt', '[^&]+').trim() || '../../examples/ace2.pdbqt';
-            var mol2 = getParam('mol2', '[^&]+').trim() || '../../examples/ace2-hit.mol2';
+            var pdb = getParam('pdb', '[^&]+').trim() || '../../examples/6x1a_pocket2.pdb';
+            var mol2 = getParam('mol2', '[^&]+').trim() || '../../examples/29_dock001.mol2';
 
             DockingViewer.create('app', [0x33DD22, 0x1133EE], true).then(viewer => {
                 viewer.loadStructuresFromUrlsAndMerge([
-                    { url: pdbqt, format: 'pdbqt' },
+                    { url: pdb, format: 'pdb' },
                     { url: mol2, format: 'mol2' }
                 ]);
             });
